@@ -30,6 +30,9 @@ if "logged_in"    not in st.session_state: st.session_state.logged_in    = True
 if "history"      not in st.session_state: st.session_state.history      = list(DEMO_HISTORY)
 if "uploaded_img" not in st.session_state: st.session_state.uploaded_img = None
 if "dark_mode"    not in st.session_state: st.session_state.dark_mode    = True
+if "username"     not in st.session_state: st.session_state.username     = "admin"
+if "auth_mode"    not in st.session_state: st.session_state.auth_mode    = "signin"
+if "profiles"     not in st.session_state: st.session_state.profiles     = {"admin": {"password": "123", "email": "admin@smartsort.app"}}
 
 # ── Theme variables ────────────────────────────────────────────────────────────
 dark = st.session_state.dark_mode
@@ -157,14 +160,15 @@ def page_result():
 
 def page_profile():
     logged_in = st.session_state.logged_in
-    history   = st.session_state.history
+    history   = st.session_state.history if logged_in else []
 
-    # Header
+    # ── Header ────────────────────────────────────────────────────────────────
+    uname     = st.session_state.username if logged_in else "Guest"
+    email_disp= st.session_state.profiles.get(uname, {}).get("email", "") if logged_in else ""
     sync      = f"<div style='color:{TEXT_MUT};font-size:12px;margin-top:2px;'>✅ Syncing across devices</div>" if logged_in else ""
     avatar_bg = "linear-gradient(135deg,#7ED957,#4CAF50)" if logged_in else CARD_BG
     avatar_ic = "👤" if logged_in else "👻"
-    name      = "Gergely K." if logged_in else "Guest"
-    h(f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid {HR};"><div><div style="color:{TEXT_MUT};font-family:Space Mono,monospace;font-size:11px;letter-spacing:2px;margin-bottom:4px;">PROFILE</div><div style="color:{TEXT};font-size:22px;font-weight:700;">{name}</div>{sync}</div><div style="width:52px;height:52px;border-radius:26px;font-size:24px;display:flex;align-items:center;justify-content:center;background:{avatar_bg};">{avatar_ic}</div></div>')
+    h(f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid {HR};"><div><div style="color:{TEXT_MUT};font-family:Space Mono,monospace;font-size:11px;letter-spacing:2px;margin-bottom:4px;">PROFILE</div><div style="color:{TEXT};font-size:22px;font-weight:700;">{uname}</div>{sync}</div><div style="width:52px;height:52px;border-radius:26px;font-size:24px;display:flex;align-items:center;justify-content:center;background:{avatar_bg};">{avatar_ic}</div></div>')
 
     # ── Theme toggle ──────────────────────────────────────────────────────────
     slabel("APPEARANCE")
@@ -175,59 +179,114 @@ def page_profile():
 
     st.markdown("---")
 
-    # ── Stats ─────────────────────────────────────────────────────────────────
+    # ── Stats (only when signed in) ───────────────────────────────────────────
     total     = len(history)
     rec_count = sum(1 for h2 in history if h2["recyclable"])
-    pct       = round(rec_count/total*100) if total else 0
+    pct       = round(rec_count / total * 100) if total else 0
     bin_counts: dict = {}
     for h2 in history:
-        bin_counts[h2["bin"]] = bin_counts.get(h2["bin"],0)+1
+        bin_counts[h2["bin"]] = bin_counts.get(h2["bin"], 0) + 1
 
     slabel("THIS MONTH")
-    c1,c2 = st.columns(2)
-    with c1: card(f'<div style="color:#7ED957;font-size:30px;font-weight:700;font-family:Space Mono,monospace;">{pct}%</div><div style="color:{TEXT_SUB};font-size:11px;margin-top:4px;">Recycled correctly</div>', bg="rgba(126,217,87,0.1)", border="rgba(126,217,87,0.2)")
-    with c2: card(f'<div style="color:{TEXT};font-size:30px;font-weight:700;font-family:Space Mono,monospace;">{total}</div><div style="color:{TEXT_SUB};font-size:11px;margin-top:4px;">Items scanned</div>')
+    if not logged_in:
+        h(f'<div style="text-align:center;padding:24px 0;color:{TEXT_MUT};font-size:13px;">Sign in to see your recycling stats.</div>')
+    else:
+        c1, c2 = st.columns(2)
+        with c1: card(f'<div style="color:#7ED957;font-size:30px;font-weight:700;font-family:Space Mono,monospace;">{pct}%</div><div style="color:{TEXT_SUB};font-size:11px;margin-top:4px;">Recycled correctly</div>', bg="rgba(126,217,87,0.1)", border="rgba(126,217,87,0.2)")
+        with c2: card(f'<div style="color:{TEXT};font-size:30px;font-weight:700;font-family:Space Mono,monospace;">{total}</div><div style="color:{TEXT_SUB};font-size:11px;margin-top:4px;">Items scanned</div>')
 
-    h(f'<div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:{TEXT_SUB};font-size:12px;">Recycling rate</span><span style="color:#7ED957;font-size:12px;font-family:Space Mono,monospace;">{rec_count}/{total}</span></div><div style="height:8px;background:{CARD_BG};border-radius:4px;border:1px solid {CARD_BD};"><div style="width:{pct}%;height:8px;background:linear-gradient(90deg,#7ED957,#4CAF50);border-radius:4px;"></div></div></div>')
+        h(f'<div style="margin-bottom:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:{TEXT_SUB};font-size:12px;">Recycling rate</span><span style="color:#7ED957;font-size:12px;font-family:Space Mono,monospace;">{rec_count}/{total}</span></div><div style="height:8px;background:{CARD_BG};border-radius:4px;border:1px solid {CARD_BD};"><div style="width:{pct}%;height:8px;background:linear-gradient(90deg,#7ED957,#4CAF50);border-radius:4px;"></div></div></div>')
 
-    slabel("BY BIN")
-    for bn, cnt in bin_counts.items():
-        col = BIN_COLORS.get(bn,"#888")
-        bw  = int((cnt/total)*120) if total else 0
-        h(f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div style="width:10px;height:10px;border-radius:5px;background:{col};flex-shrink:0;"></div><div style="color:{TEXT_SUB};font-size:12px;flex:1;">{bn}</div><div style="color:{TEXT};font-size:12px;font-family:Space Mono,monospace;">{cnt}</div><div style="height:4px;width:{bw}px;background:{col};border-radius:2px;opacity:0.7;"></div></div>')
+        slabel("BY BIN")
+        for bn, cnt in bin_counts.items():
+            col = BIN_COLORS.get(bn, "#888")
+            bw  = int((cnt / total) * 120) if total else 0
+            h(f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div style="width:10px;height:10px;border-radius:5px;background:{col};flex-shrink:0;"></div><div style="color:{TEXT_SUB};font-size:12px;flex:1;">{bn}</div><div style="color:{TEXT};font-size:12px;font-family:Space Mono,monospace;">{cnt}</div><div style="height:4px;width:{bw}px;background:{col};border-radius:2px;opacity:0.7;"></div></div>')
 
     st.markdown("---")
+
+    # ── Recent scans (only when signed in) ───────────────────────────────────
     slabel("RECENT SCANS")
-    for entry in history[:10]:
-        col  = BIN_COLORS.get(entry["bin"],"#888")
-        icon = "♻️" if entry["recyclable"] else "🚫"
-        rbg  = "rgba(126,217,87,0.12)" if entry["recyclable"] else "rgba(255,80,80,0.12)"
-        h(f'<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid {HR};"><div style="width:36px;height:36px;border-radius:10px;background:{rbg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">{icon}</div><div style="flex:1;min-width:0;"><div style="color:{TEXT};font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{entry["item"]}</div><div style="color:{TEXT_MUT};font-size:11px;">{entry["date"]}</div></div><div style="padding:3px 10px;border-radius:6px;background:{col}20;border:1px solid {col}40;color:{col};font-size:10px;font-family:Space Mono,monospace;white-space:nowrap;">{entry["bin"]}</div></div>')
+    if not logged_in:
+        h(f'<div style="text-align:center;padding:24px 0;color:{TEXT_MUT};font-size:13px;">Sign in to see your scan history.</div>')
+    else:
+        for entry in history[:10]:
+            col  = BIN_COLORS.get(entry["bin"], "#888")
+            icon = "♻️" if entry["recyclable"] else "🚫"
+            rbg  = "rgba(126,217,87,0.12)" if entry["recyclable"] else "rgba(255,80,80,0.12)"
+            h(f'<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid {HR};"><div style="width:36px;height:36px;border-radius:10px;background:{rbg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">{icon}</div><div style="flex:1;min-width:0;"><div style="color:{TEXT};font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{entry["item"]}</div><div style="color:{TEXT_MUT};font-size:11px;">{entry["date"]}</div></div><div style="padding:3px 10px;border-radius:6px;background:{col}20;border:1px solid {col}40;color:{col};font-size:10px;font-family:Space Mono,monospace;white-space:nowrap;">{entry["bin"]}</div></div>')
 
     st.markdown(" ")
 
-    # ── Sign in / out ─────────────────────────────────────────────────────────
+    # ── Sign in / out / register ──────────────────────────────────────────────
     if logged_in:
         if st.button("Sign Out", use_container_width=True):
-            st.session_state.logged_in   = False
-            st.session_state.history     = []
-            st.session_state.result      = None
-            st.session_state.uploaded_img= None
+            st.session_state.logged_in    = False
+            st.session_state.history      = []
+            st.session_state.result       = None
+            st.session_state.uploaded_img = None
+            st.session_state.username     = ""
+            st.session_state.auth_mode    = "signin"
             st.rerun()
-        h(f'<div style="text-align:center;color:{TEXT_MUT};font-size:11px;margin-top:6px;">Signed in as gergely@student.buas.nl</div>')
-    else:
+        h(f'<div style="text-align:center;color:{TEXT_MUT};font-size:11px;margin-top:6px;">Signed in as {email_disp}</div>')
+
+    elif st.session_state.auth_mode == "signin":
         slabel("ACCOUNT")
-        email    = st.text_input("Email",    placeholder="you@example.com", label_visibility="collapsed")
-        password = st.text_input("Password", placeholder="Password",        label_visibility="collapsed", type="password")
-        if st.button("Sign In / Create Account", use_container_width=True, type="primary"):
-            if email and password:
+        uname_in = st.text_input("Username", placeholder="Username", label_visibility="collapsed", key="si_user")
+        pass_in  = st.text_input("Password", placeholder="Password", label_visibility="collapsed", type="password", key="si_pass")
+
+        if st.button("Sign In", use_container_width=True, type="primary"):
+            profiles = st.session_state.profiles
+            if uname_in in profiles and profiles[uname_in]["password"] == pass_in:
                 st.session_state.logged_in = True
+                st.session_state.username  = uname_in
                 st.session_state.history   = list(DEMO_HISTORY)
+                st.session_state.auth_mode = "signin"
                 st.success("Signed in!")
+                time.sleep(0.5)
+                st.rerun()
+            elif uname_in and pass_in:
+                st.error("Incorrect username or password.")
+                h(f'<div style="text-align:center;color:{TEXT_MUT};font-size:12px;margin-top:4px;">Don\'t have an account? Click <b>Create Profile</b> below.</div>')
+            else:
+                st.warning("Please enter your username and password.")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Create Profile", use_container_width=True):
+                st.session_state.auth_mode = "register"
+                st.rerun()
+        with c2:
+            if st.button("Forgot Password?", use_container_width=True):
+                st.info("Please contact support to reset your password.")
+
+    elif st.session_state.auth_mode == "register":
+        slabel("CREATE PROFILE")
+        new_user  = st.text_input("Choose a username", placeholder="Username",        label_visibility="collapsed", key="reg_user")
+        new_email = st.text_input("Email",              placeholder="you@example.com", label_visibility="collapsed", key="reg_email")
+        new_pass  = st.text_input("Choose a password",  placeholder="Password",        label_visibility="collapsed", type="password", key="reg_pass")
+        new_pass2 = st.text_input("Confirm password",   placeholder="Confirm password",label_visibility="collapsed", type="password", key="reg_pass2")
+
+        if st.button("Create Account", use_container_width=True, type="primary"):
+            if not (new_user and new_email and new_pass and new_pass2):
+                st.warning("Please fill in all fields.")
+            elif new_user in st.session_state.profiles:
+                st.error("Username already taken. Please choose another.")
+            elif new_pass != new_pass2:
+                st.error("Passwords do not match.")
+            else:
+                st.session_state.profiles[new_user] = {"password": new_pass, "email": new_email}
+                st.session_state.logged_in = True
+                st.session_state.username  = new_user
+                st.session_state.history   = []
+                st.session_state.auth_mode = "signin"
+                st.success(f"Account created! Welcome, {new_user}!")
                 time.sleep(0.6)
                 st.rerun()
-            else:
-                st.warning("Please enter your email and password.")
+
+        if st.button("← Back to Sign In", use_container_width=True):
+            st.session_state.auth_mode = "signin"
+            st.rerun()
 
 nav_bar()
 st.markdown("---")
