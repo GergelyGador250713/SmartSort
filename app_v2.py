@@ -51,9 +51,13 @@ st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 html,body,[class*="css"]{{font-family:'DM Sans',sans-serif!important;background-color:{BG}!important;color:{TEXT};}}
+.stApp, .stApp > div, [data-testid="stAppViewContainer"], [data-testid="stAppViewBlockContainer"],
+[data-testid="block-container"], section.main, section.main > div {{
+    background-color:{BG}!important;
+}}
 #MainMenu,footer,header{{visibility:hidden;}}
 .stDeployButton,[data-testid="stToolbar"],[data-testid="stDecoration"],[data-testid="stSidebar"]{{display:none;}}
-.block-container{{padding-top:1rem!important;padding-bottom:1rem!important;max-width:480px!important;}}
+.block-container{{padding-top:1rem!important;padding-bottom:1rem!important;max-width:480px!important;background-color:{BG}!important;}}
 .stButton>button{{font-family:'DM Sans',sans-serif!important;font-weight:600!important;border-radius:14px!important;border:none!important;transition:all .2s ease!important;width:100%!important;}}
 .stButton>button:hover{{transform:translateY(-1px);filter:brightness(1.1);}}
 [data-testid="stFileUploader"]{{background:{CARD_BG}!important;border:2px dashed {UPLOAD_BD}!important;border-radius:16px!important;padding:8px!important;}}
